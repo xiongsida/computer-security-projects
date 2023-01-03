@@ -1,4 +1,3 @@
-#Sida Xiong, 1008498305, sida.xiong@mail.utoronto.ca
 
 Part 1 Explanation:
 I add a HTML form to the search field to create a fake login form, which is vulnerable to XSS.
