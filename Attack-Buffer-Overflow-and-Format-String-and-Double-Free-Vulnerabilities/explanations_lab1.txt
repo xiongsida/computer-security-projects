@@ -1,0 +1,50 @@
+#Sida Xiong, 1008498305, sida.xiong@mail.utoronto.ca
+
+Target1 contains a buffer overflow vulnerability, 
+it uses "strcpy" to copy a string to a 96-byte-length buffer without checking if the string exceeds the buffer's length. 
+The buffer starts at the address of 0x2021fe50, while lab_main's return address is 0x2021fec8. 
+So, I use a 124-byte-length string, with the shellcode locating at the beginning of the string 
+(or several bytes after the beginning and using NOP to fill before shellcode), 
+and overflow the return address with string's last four bytes using the buffer's starting address 
+where shellcode would locate after "strcpy"copies the string into buffer.
+
+Target2 has a buffer overflow vulnerability. 
+Though there're a length-checking logic to prevent overflowing to return address directly, 
+I can overflow the buffer to overwrite the "len" and "i". I overwrite the "len" with "\x1b\x01\x00\x00", 
+making us then able to write 284-byte-length string to buffer to cover return address. 
+I overwrite "i" with 268, the number it should be when it comes to itself, to make the string copied correctly; 
+and I put the shellcode's address in the last four bytes to overwrite foo's return address. 
+And I use the auto-added 0x00 between env[i] to pass on 0x00.
+
+Target3 also has a buffer overflow vulnerability. 
+It's like target1. Though it seems to have length-checking, we can overflow the return address directly. 
+But the tricky thing is that before copying our string containing shellcode into buffer, 
+there is already 4 bytes occupied in buffer, and the logic in this target code makes 
+the starting address we can copy string to has 4-byte-offset from beginning. So, different with what I did in sploit1, 
+what I put into return address is the address which has 4-byte-offset from the beginning of buffer, that is "\x54\xfe\x21\x20".
+
+Target4 contains a buffer overflow vulnerability. 
+It's similar to target2, instead of directly overflowing to return address, I can overflow the buffer to overwrite local variable. 
+This time I cannot first reach "len", but I can overflow the lowest byte of "i" as 0x96, 
+fortunately, "i" is just used for counting number, it won't change the address that current character copied to. 
+So long as I change the number of "i" to make it some bytes less than unchanging "len", 
+I can overwrite foo's return address with buffer's starting address "\xf0\xfd\x21\x20". And I use env[i] to pass 0x00.
+
+Target5 has a format string vulnerability. 
+Expand the return address(0x2021f988) into four 8-byte-length addresses (each point to one byte), 
+connected by 8-byte-length dummy-values (used for consuming "%nnx" between "%hhn"), 
+put 4 NOP after to reach 60-byte-length; then put 45-byte-length shellcode and 
+the string "%8x%8x%8x%8x%143x%hhn%29x%hhn%40x%hhn%255x%hhn". 
+Those "%8x", "%143x" consume length between &formatString and initial address of the pointer 
+("%" makes a pointer looks up a-word-length in memory). 
+When coming to "%hhn", pointer points to the RA, and already printed amount will be written 
+(e.g., before first "%hhn", 45+4*8+143=220 bytes have been printed to buffer, so “hhn” write 0xdc to 0x000000002021f988).
+
+Target6 has a double-free vulnerability. "q" is freed twice. 
+I use string to put the address(0x0104ec48) where the string is copied to into fake tag's left pointer, 
+and put foo's return address 0x2021fea8 into fake tag's right pointer. 
+So when "q" is freed and consolidated leftward, "\x48\xec\x04\x01" will be written into 0x2021fea8. 
+Let shellcode lie 8-byte-offset from 0x0104ec48, leaving spaces for chunk tag; 
+set the lowest byte of right pointer as 0x01 to indicate free chunk to let second tfree(q) consolidate leftward. 
+Also need a JMP instruction("\xeb") at 0x0104ec48 to jump over the right pointer to execute shellcode smoothly.
+
