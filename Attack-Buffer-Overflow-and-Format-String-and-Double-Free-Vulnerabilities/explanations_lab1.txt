@@ -1,4 +1,4 @@
-#Sida Xiong, 1008498305, sida.xiong@mail.utoronto.ca
+#Sida Xiong
 
 Target1 contains a buffer overflow vulnerability, 
 it uses "strcpy" to copy a string to a 96-byte-length buffer without checking if the string exceeds the buffer's length. 
